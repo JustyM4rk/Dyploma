@@ -1,11 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field  # <--- ДОДАНО Field
 from datetime import datetime
 from typing import Optional
 from uuid import UUID  # Імпорт для роботи з UUID
 
 # --- USER ---
 class UserBase(BaseModel):
-    email: str
+    # <--- НОВА ЛОГІКА: Перевірка правильного формату email
+    email: str = Field(..., pattern=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
 
 class UserCreate(UserBase):
     name: str

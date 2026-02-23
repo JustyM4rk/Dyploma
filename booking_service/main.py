@@ -92,16 +92,21 @@ def create_new_booking(booking: schemas.BookingCreate, db: Session = Depends(get
     # --- ВИПРАВЛЕНА ПЕРЕВІРКА ЧАСУ ---
     now = datetime.now()
     booking_start = booking.start_time
+    booking_end = booking.end_time  # Отримуємо час завершення
 
     # Прибираємо часовий пояс для коректного порівняння
     if booking_start.tzinfo:
         booking_start = booking_start.replace(tzinfo=None)
+    if booking_end.tzinfo:
+        booking_end = booking_end.replace(tzinfo=None)
     
-    # Дозволяємо бронювати, навіть якщо час початку був 15 хвилин тому
-    # (це вирішує проблему повільного заповнення форми)
+    # 1. Перевірка на минулий час для початку (дозволяємо запізнення до 15 хв)
     if booking_start < (now - timedelta(minutes=15)):
         raise HTTPException(status_code=400, detail="Не можна бронювати час у далекому минулому!")
-    
+        
+    # 2. НОВА ПЕРЕВІРКА: Кінець має бути після початку
+    if booking_end <= booking_start:
+        raise HTTPException(status_code=400, detail="Час завершення має бути пізніше часу початку!")
     # --- Кінець виправлення ---
 
     room = db.query(models.Room).filter(models.Room.id == booking.room_id).first()
