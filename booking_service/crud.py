@@ -66,9 +66,7 @@ def update_booking(db: Session, booking_id: str, booking: schemas.BookingUpdate)
     if not db_booking:
         return None
     
-    
     update_data = booking.dict(exclude_unset=True)
-    
     
     for key, value in update_data.items():
         setattr(db_booking, key, value)
@@ -92,9 +90,21 @@ def check_availability(db: Session, room_id: str, start_time: datetime, end_time
 def get_rooms(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Room).offset(skip).limit(limit).all()
 
+# <--- НОВА ФУНКЦІЯ, ЯКОЇ НЕ ВИСТАЧАЛО --->
+def get_room_by_name(db: Session, name: str):
+    return db.query(models.Room).filter(models.Room.name == name).first()
+
 def create_room(db: Session, room: schemas.RoomCreate):
-    db_room = models.Room(name=room.name, capacity=room.capacity, location=room.location)
+    # <--- ОНОВЛЕНО: Тепер зберігаємо всі нові поля --->
+    db_room = models.Room(
+        name=room.name, 
+        capacity=room.capacity, 
+        location=room.location,
+        description=room.description,
+        area=room.area,
+        price_per_hour=room.price_per_hour
+    )
     db.add(db_room)
     db.commit()
     db.refresh(db_room)
-    return db_room
+    return db_room 

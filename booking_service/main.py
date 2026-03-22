@@ -1,13 +1,16 @@
 from typing import List
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
-from datetime import datetime, timedelta # <--- 1. Додано timedelta
+from datetime import datetime, timedelta
 
 # --- Імпорти модулів ---
 from . import models, schemas, crud, analytics, ml_engine
 from .database import SessionLocal, engine
+from .email_service import send_email
+# НОВЕ: Імпорт функцій планувальника
+from .scheduler import scheduler, schedule_booking_reminders, cancel_booking_reminders
 
 # --- Налаштування безпеки (Bcrypt) ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -28,6 +31,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# НОВЕ: Запуск та зупинка планувальника разом із FastAPI
+@app.on_event("startup")
+def startup_event():
+    scheduler.start()
+    print("⏰ Планувальник завдань (APScheduler) запущено!")
+
+@app.on_event("shutdown")
+def shutdown_event():
+    scheduler.shutdown()
+    print("🛑 Планувальник завдань зупинено.")
+
 # --- Dependency ---
 def get_db():
     db = SessionLocal()
@@ -36,7 +50,6 @@ def get_db():
     finally:
         db.close()
 
-
 # ==========================================
 # API ENDPOINTS
 # ==========================================
@@ -44,7 +57,6 @@ def get_db():
 @app.get("/")
 def read_root():
     return {"message": "Booking Service запущено!"}
-
 
 # --- ЛОГІН ---
 @app.post("/login/")
@@ -63,7 +75,6 @@ def login(creds: schemas.LoginRequest, db: Session = Depends(get_db)):
         "department": user.department
     }
 
-
 # --- КІМНАТИ ---
 @app.get("/rooms/", response_model=List[schemas.Room])
 def read_rooms(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -76,7 +87,6 @@ def create_new_room(room: schemas.RoomCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Кімната з такою назвою вже існує")
     return crud.create_room(db=db, room=room)
 
-
 # --- КОРИСТУВАЧІ ---
 @app.post("/users/", response_model=schemas.User)
 def create_new_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -85,29 +95,23 @@ def create_new_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Цей email вже зареєстровано")
     return crud.create_user(db=db, user=user)
 
-
 # --- БРОНЮВАННЯ (Створення) ---
 @app.post("/bookings/", response_model=schemas.Booking)
-def create_new_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)):
-    # --- ВИПРАВЛЕНА ПЕРЕВІРКА ЧАСУ ---
+def create_new_booking(booking: schemas.BookingCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     now = datetime.now()
     booking_start = booking.start_time
-    booking_end = booking.end_time  # Отримуємо час завершення
+    booking_end = booking.end_time  
 
-    # Прибираємо часовий пояс для коректного порівняння
     if booking_start.tzinfo:
         booking_start = booking_start.replace(tzinfo=None)
     if booking_end.tzinfo:
         booking_end = booking_end.replace(tzinfo=None)
     
-    # 1. Перевірка на минулий час для початку (дозволяємо запізнення до 15 хв)
     if booking_start < (now - timedelta(minutes=15)):
         raise HTTPException(status_code=400, detail="Не можна бронювати час у далекому минулому!")
         
-    # 2. НОВА ПЕРЕВІРКА: Кінець має бути після початку
     if booking_end <= booking_start:
         raise HTTPException(status_code=400, detail="Час завершення має бути пізніше часу початку!")
-    # --- Кінець виправлення ---
 
     room = db.query(models.Room).filter(models.Room.id == booking.room_id).first()
     if not room:
@@ -123,14 +127,27 @@ def create_new_booking(booking: schemas.BookingCreate, db: Session = Depends(get
     if not is_available:
         raise HTTPException(status_code=409, detail="Кімната зайнята на цей час!")
 
-    return crud.create_booking(db=db, booking=booking)
+    # Створюємо запис у БД
+    db_booking = crud.create_booking(db=db, booking=booking)
 
+    user = db.query(models.User).filter(models.User.id == db_booking.user_id).first()
+    
+    status_text = "⏳ Очікує підтвердження" if db_booking.status == "pending" else "✅ Підтверджено"
+    subject = f"Деталі вашого бронювання: {room.name}"
+    body = f"Привіт, {user.name}!\n\nВи успішно створили заявку на бронювання.\n\nДеталі:\n- Кімната: {room.name}\n- Початок: {db_booking.start_time.strftime('%d.%m.%Y %H:%M')}\n- Завершення: {db_booking.end_time.strftime('%d.%m.%Y %H:%M')}\n- Статус: {status_text}\n\nДякуємо, що користуєтесь нашою системою!"
+    
+    background_tasks.add_task(send_email, user.email, subject, body)
+
+    # НОВЕ: Плануємо нагадування, тільки якщо воно одразу підтверджене (тривалість < 3 год)
+    if db_booking.status == "confirmed":
+        schedule_booking_reminders(str(db_booking.id), user.email, user.name, room.name, db_booking.start_time)
+
+    return db_booking
 
 # --- БРОНЮВАННЯ (Список) ---
 @app.get("/bookings/", response_model=List[schemas.Booking])
 def read_bookings(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return crud.get_bookings(db, skip=skip, limit=limit)
-
 
 # --- АДМІНКА: ВИДАЛЕННЯ ---
 @app.delete("/bookings/{booking_id}")
@@ -138,17 +155,42 @@ def delete_booking(booking_id: str, db: Session = Depends(get_db)):
     deleted = crud.delete_booking(db, booking_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Бронювання не знайдено")
+    
+    # НОВЕ: Скасовуємо нагадування при видаленні
+    cancel_booking_reminders(booking_id)
+    
     return {"message": "Успішно видалено"}
-
 
 # --- АДМІНКА: РЕДАГУВАННЯ ---
 @app.put("/bookings/{booking_id}", response_model=schemas.Booking)
-def update_booking_info(booking_id: str, booking_update: schemas.BookingUpdate, db: Session = Depends(get_db)):
+def update_booking_info(booking_id: str, booking_update: schemas.BookingUpdate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    
+    old_booking = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
+    old_status = old_booking.status if old_booking else None
+
     updated_booking = crud.update_booking(db, booking_id, booking_update)
     if not updated_booking:
         raise HTTPException(status_code=404, detail="Бронювання не знайдено")
-    return updated_booking
+    
+    if booking_update.status and booking_update.status != old_status:
+        user = db.query(models.User).filter(models.User.id == updated_booking.user_id).first()
+        room = db.query(models.Room).filter(models.Room.id == updated_booking.room_id).first()
+        
+        status_text = "✅ Підтверджено" if updated_booking.status == 'confirmed' else "⛔ Відхилено"
+        subject = f"Оновлення статусу бронювання: {room.name}"
+        body = f"Привіт, {user.name}!\n\nСтатус вашого бронювання на {updated_booking.start_time.strftime('%d.%m.%Y %H:%M')} змінився.\n\nНовий статус: {status_text}\nКімната: {room.name}\n\nГарного дня!"
+        
+        background_tasks.add_task(send_email, user.email, subject, body)
 
+        # НОВЕ: Робота з нагадуваннями при зміні статусу
+        if booking_update.status == 'confirmed':
+            # Якщо адмін підтвердив - ставимо нагадування
+            schedule_booking_reminders(str(updated_booking.id), user.email, user.name, room.name, updated_booking.start_time)
+        elif booking_update.status == 'rejected':
+            # Якщо відхилив - знімаємо будильники
+            cancel_booking_reminders(str(updated_booking.id))
+
+    return updated_booking
 
 # ==========================================
 # ANALYTICS & ML

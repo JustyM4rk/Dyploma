@@ -4,6 +4,17 @@ import axios from 'axios';
 export default function AdminPanel() {
   const [bookings, setBookings] = useState([]);
   const [editing, setEditing] = useState<any>(null);
+  
+  // --- НОВИЙ СТЕЙТ ДЛЯ СТВОРЕННЯ КІМНАТИ ---
+  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
+  const [roomData, setRoomData] = useState({
+    name: '',
+    capacity: 10,
+    location: '',
+    description: '',
+    area: 0,
+    price_per_hour: 0
+  });
 
   const load = () => axios.get('http://127.0.0.1:8000/bookings/').then(r => setBookings(r.data));
   useEffect(() => { load() }, []);
@@ -15,7 +26,6 @@ export default function AdminPanel() {
     }
   };
 
-  // Функція схвалення (Approve)
   const approve = async (b: any) => {
     try {
       await axios.put(`http://127.0.0.1:8000/bookings/${b.id}`, { ...b, status: 'confirmed' });
@@ -26,7 +36,6 @@ export default function AdminPanel() {
     }
   };
 
-  // Функція відхилення (Reject)
   const reject = async (b: any) => {
     if(confirm("Відхилити цю заявку?")) {
       try {
@@ -44,9 +53,35 @@ export default function AdminPanel() {
     load();
   };
 
+  // --- НОВА ФУНКЦІЯ: Створення кімнати ---
+  const handleCreateRoom = async () => {
+    if (!roomData.name) {
+      alert("⚠️ Назва кімнати є обов'язковою!");
+      return;
+    }
+    try {
+      await axios.post('http://127.0.0.1:8000/rooms/', roomData);
+      alert("Кімнату успішно створено! 🎉");
+      setIsRoomModalOpen(false);
+      setRoomData({ name: '', capacity: 10, location: '', description: '', area: 0, price_per_hour: 0 }); // Очищення форми
+    } catch (e: any) {
+      alert("Помилка створення кімнати: " + (e.response?.data?.detail || "Невідома помилка"));
+    }
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">⚙️ Панель Адміністратора</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">⚙️ Панель Адміністратора</h1>
+        
+        {/* НОВА КНОПКА */}
+        <button 
+          onClick={() => setIsRoomModalOpen(true)} 
+          className="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 transition shadow-md"
+        >
+          ➕ Створити кімнату
+        </button>
+      </div>
       
       <div className="bg-white rounded-lg shadow overflow-x-auto">
         <table className="min-w-full">
@@ -74,7 +109,6 @@ export default function AdminPanel() {
                   {b.status === 'rejected' && (
                     <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">⛔ Відхилено</span>
                   )}
-                  {/* Якщо статус невідомий або старий */}
                   {!['pending', 'confirmed', 'rejected'].includes(b.status) && (
                      <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold">{b.status}</span>
                   )}
@@ -92,27 +126,15 @@ export default function AdminPanel() {
                 </td>
 
                 <td className="p-3 text-center space-x-2 flex justify-center items-center">
-                  
-                  {/* Кнопки для Pending (Очікує) */}
                   {b.status === 'pending' && (
                     <>
-                      <button onClick={() => approve(b)} title="Підтвердити" className="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition text-xs">
-                        ✅
-                      </button>
-                      <button onClick={() => reject(b)} title="Відхилити" className="bg-orange-500 text-white p-2 rounded hover:bg-orange-600 transition text-xs">
-                        ⛔
-                      </button>
+                      <button onClick={() => approve(b)} title="Підтвердити" className="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition text-xs">✅</button>
+                      <button onClick={() => reject(b)} title="Відхилити" className="bg-orange-500 text-white p-2 rounded hover:bg-orange-600 transition text-xs">⛔</button>
                     </>
                   )}
-
-                  {/* Кнопка "Повернути" для Rejected (якщо помилково відхилили) */}
                   {b.status === 'rejected' && (
-                      <button onClick={() => approve(b)} title="Все ж таки підтвердити" className="bg-gray-300 text-gray-700 p-2 rounded hover:bg-green-200 transition text-xs">
-                        ↩️
-                      </button>
+                      <button onClick={() => approve(b)} title="Все ж таки підтвердити" className="bg-gray-300 text-gray-700 p-2 rounded hover:bg-green-200 transition text-xs">↩️</button>
                   )}
-
-                  {/* Стандартні кнопки */}
                   <button onClick={() => setEditing(b)} className="bg-blue-400 text-white p-2 rounded hover:bg-blue-500 text-xs">✎</button>
                   <button onClick={() => del(b.id)} className="bg-red-500 text-white p-2 rounded hover:bg-red-600 text-xs">🗑</button>
                 </td>
@@ -122,11 +144,11 @@ export default function AdminPanel() {
         </table>
       </div>
       
-      {/* Модальне вікно редагування */}
+      {/* Модальне вікно редагування БРОНЮВАННЯ */}
       {editing && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
            <div className="bg-white p-6 rounded-xl w-full max-w-md shadow-2xl">
-             <h2 className="text-xl font-bold mb-4">Редагування</h2>
+             <h2 className="text-xl font-bold mb-4">Редагування бронювання</h2>
              <textarea className="border w-full p-2 rounded mb-2" value={editing.comment} onChange={e=>setEditing({...editing, comment: e.target.value})} placeholder="Коментар"/>
              <div className="flex gap-2">
                <button onClick={() => setEditing(null)} className="flex-1 py-2 border rounded">Скасувати</button>
@@ -135,6 +157,61 @@ export default function AdminPanel() {
            </div>
         </div>
       )}
+
+      {/* НОВЕ: Модальне вікно створення КІМНАТИ */}
+      {isRoomModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+           <div className="bg-white p-6 rounded-xl w-full max-w-md shadow-2xl">
+             <h2 className="text-2xl font-bold mb-4 text-purple-700">Створити нову кімнату</h2>
+             
+             <div className="space-y-3">
+               <div>
+                 <label className="block text-sm font-bold text-gray-700">Назва кімнати</label>
+                 <input className="border w-full p-2 rounded" placeholder="Напр. Переговорна А" 
+                   value={roomData.name} onChange={e => setRoomData({...roomData, name: e.target.value})} />
+               </div>
+               
+               <div className="flex gap-2">
+                 <div className="flex-1">
+                   <label className="block text-sm font-bold text-gray-700">Місткість (осіб)</label>
+                   <input type="number" className="border w-full p-2 rounded" 
+                     value={roomData.capacity} onChange={e => setRoomData({...roomData, capacity: parseInt(e.target.value) || 0})} />
+                 </div>
+                 <div className="flex-1">
+                   <label className="block text-sm font-bold text-gray-700">Площа (кв.м)</label>
+                   <input type="number" className="border w-full p-2 rounded" 
+                     value={roomData.area} onChange={e => setRoomData({...roomData, area: parseFloat(e.target.value) || 0})} />
+                 </div>
+               </div>
+
+               <div className="flex gap-2">
+                 <div className="flex-1">
+                   <label className="block text-sm font-bold text-gray-700">Ціна за годину ($/₴)</label>
+                   <input type="number" className="border w-full p-2 rounded" 
+                     value={roomData.price_per_hour} onChange={e => setRoomData({...roomData, price_per_hour: parseFloat(e.target.value) || 0})} />
+                 </div>
+                 <div className="flex-1">
+                   <label className="block text-sm font-bold text-gray-700">Поверх/Локація</label>
+                   <input className="border w-full p-2 rounded" placeholder="Напр. 2 поверх"
+                     value={roomData.location} onChange={e => setRoomData({...roomData, location: e.target.value})} />
+                 </div>
+               </div>
+
+               <div>
+                 <label className="block text-sm font-bold text-gray-700">Опис та обладнання</label>
+                 <textarea className="border w-full p-2 rounded" rows={3} placeholder="Наявний проектор, кулер, маркерна дошка..."
+                   value={roomData.description} onChange={e => setRoomData({...roomData, description: e.target.value})} />
+               </div>
+             </div>
+
+             <div className="flex gap-2 mt-6">
+               <button onClick={() => setIsRoomModalOpen(false)} className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-100 font-bold">Скасувати</button>
+               <button onClick={handleCreateRoom} className="flex-1 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 font-bold">Створити</button>
+             </div>
+           </div>
+        </div>
+      )}
+
     </div>
   );
 }

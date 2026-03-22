@@ -6,6 +6,10 @@ interface Room {
   id: string;
   name: string;
   capacity: number;
+  location?: string;
+  description?: string;
+  area?: number;
+  price_per_hour?: number;
 }
 
 export default function BookingPage() {
@@ -15,7 +19,6 @@ export default function BookingPage() {
   const [endTime, setEndTime] = useState('');
   const [comment, setComment] = useState('');
   
-  // Стан для AI-прогнозу
   const [prediction, setPrediction] = useState<any>(null);
 
   const [services, setServices] = useState({
@@ -26,19 +29,17 @@ export default function BookingPage() {
 
   const navigate = useNavigate();
 
-  // Завантаження кімнат
   useEffect(() => {
     axios.get('http://127.0.0.1:8000/rooms/')
       .then(res => setRooms(res.data))
       .catch(console.error);
   }, []);
 
-  // Ефект для отримання прогнозу AI при зміні часу
   useEffect(() => {
     if (startTime) {
       const date = new Date(startTime);
-      const day = date.getDay();  // 0-6 (Неділя-Субота)
-      const hour = date.getHours(); // 0-23
+      const day = date.getDay();  
+      const hour = date.getHours(); 
 
       axios.get(`http://127.0.0.1:8000/ml/predict?day=${day}&hour=${hour}`)
         .then(res => setPrediction(res.data))
@@ -79,7 +80,6 @@ export default function BookingPage() {
     try {
       const res = await axios.post('http://127.0.0.1:8000/bookings/', bookingData);
       
-      // Логіка повідомлень (Pending vs Confirmed)
       if (res.data.status === 'pending') {
          alert(`⏳ Заявку прийнято! \nОскільки бронювання довше 3-х годин, воно очікує підтвердження адміністратора.`);
       } else {
@@ -97,7 +97,7 @@ export default function BookingPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-8 max-w-7xl mx-auto relative z-0">
       <h1 className="text-3xl font-bold mb-8 text-gray-800">📅 Оберіть кімнату</h1>
       
       {rooms.length === 0 ? (
@@ -105,17 +105,46 @@ export default function BookingPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {rooms.map((room) => (
-            <div key={room.id} className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 hover:shadow-2xl transition duration-300">
-              <div className="flex justify-between items-start mb-4">
+            // ОНОВЛЕНО: Картка relative, flex, cursor-pointer. transition на всьому. hover:z-10
+            <div key={room.id} className="group relative bg-white p-6 rounded-xl shadow-lg border border-gray-100 transition-all duration-300 flex flex-col justify-between cursor-pointer hover:shadow-2xl hover:z-10">
+              
+              <div className="flex justify-between items-start mb-2 relative z-10">
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">{room.name}</h2>
-                  <p className="text-sm text-gray-500">Місткість: {room.capacity} осіб</p>
+                  <p className="text-sm text-gray-500">👥 Місткість: {room.capacity} осіб</p>
                 </div>
                 <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-bold">Вільна</span>
               </div>
+
+              {/* НОВИЙ БЛОК POPOVER (спливає ЗНИЗУ) */}
+              {/* Він має absolute top-full, opacity-0, translate-y-2, pointer-events-none. 
+                 При group-hover: opacity-100, transform reset, pointer-events active. */}
+              {/* Також додано rounded-b-xl, bg-white, border, shadow-xl для гарного Popover вигляду */}
+              <div className="absolute top-full left-0 w-full p-4 bg-white border border-gray-100 rounded-b-xl shadow-xl z-20 transition-all duration-300 ease-in-out opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+                <div className="text-sm text-gray-600 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="font-semibold">📍 Поверх:</span>
+                    <span>{room.location || '-'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-semibold">📏 Площа:</span>
+                    <span>{room.area ? `${room.area} кв.м` : '-'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-semibold">💰 Ціна:</span>
+                    <span className="text-green-600 font-bold">{room.price_per_hour ? `${room.price_per_hour} ₴/год` : 'Безкоштовно'}</span>
+                  </div>
+                  {room.description && (
+                    <div className="mt-2 bg-gray-50 p-2 rounded text-xs text-gray-500 italic">
+                      "{room.description}"
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <button 
                 onClick={() => setSelectedRoom(room)}
-                className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition"
+                className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition relative z-10"
               >
                 Забронювати
               </button>
@@ -124,6 +153,7 @@ export default function BookingPage() {
         </div>
       )}
 
+      {/* Модальне вікно бронювання (залишилось без змін) */}
       {selectedRoom && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full animate-bounce-in max-h-[90vh] overflow-y-auto">
@@ -164,8 +194,8 @@ export default function BookingPage() {
               </div>
             </div>
             <div className="mt-6 flex gap-4">
-              <button onClick={() => setSelectedRoom(null)} className="flex-1 py-2 border rounded-lg">Скасувати</button>
-              <button onClick={handleBooking} className="flex-1 py-2 bg-green-600 text-white rounded-lg font-bold">Підтвердити</button>
+              <button onClick={() => setSelectedRoom(null)} className="flex-1 py-2 border rounded-lg hover:bg-gray-50">Скасувати</button>
+              <button onClick={handleBooking} className="flex-1 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition">Підтвердити</button>
             </div>
           </div>
         </div>

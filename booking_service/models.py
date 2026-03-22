@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Float # <--- Додано Float
 from sqlalchemy.orm import relationship
 from .database import Base
 import uuid
@@ -26,6 +26,12 @@ class Room(Base):
     name = Column(String, unique=True, index=True)
     capacity = Column(Integer)
     location = Column(String, nullable=True)
+    
+    # --- НОВІ КОЛОНКИ ---
+    description = Column(Text, nullable=True)       # Опис кімнати
+    area = Column(Float, nullable=True)             # Площа у кв. метрах
+    price_per_hour = Column(Float, nullable=True)   # Ціна за годину оренди
+    # --------------------
     
     bookings = relationship("Booking", back_populates="room")
 

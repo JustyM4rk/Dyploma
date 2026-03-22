@@ -30,6 +30,10 @@ class RoomBase(BaseModel):
     name: str
     capacity: int
     location: Optional[str] = None
+    # --- НОВІ ПОЛЯ ---
+    description: Optional[str] = None
+    area: Optional[float] = None
+    price_per_hour: Optional[float] = None
 
 class RoomCreate(RoomBase):
     pass

@@ -2,11 +2,11 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# Якщо залишити ці значення, листи будуть просто виводитись у консоль (для тестування)
+# Дані для відправки
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-SENDER_EMAIL = "your_email@gmail.com" 
-SENDER_PASSWORD = "your_password"
+SENDER_EMAIL = "markiian250906@gmail.com" 
+SENDER_PASSWORD = "shtc mdbl bkyl bvog"
 
 def send_email(to_email: str, subject: str, body: str):
     # --- РЕЖИМ ТЕСТУВАННЯ (Вивід у консоль) ---
