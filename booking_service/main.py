@@ -88,6 +88,11 @@ def create_new_room(room: schemas.RoomCreate, db: Session = Depends(get_db)):
     return crud.create_room(db=db, room=room)
 
 # --- КОРИСТУВАЧІ ---
+# <--- НОВИЙ МАРШРУТ ДЛЯ ОТРИМАННЯ ВСІХ КОРИСТУВАЧІВ --->
+@app.get("/users/", response_model=List[schemas.User])
+def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return crud.get_users(db, skip=skip, limit=limit)
+
 @app.post("/users/", response_model=schemas.User)
 def create_new_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
@@ -138,7 +143,7 @@ def create_new_booking(booking: schemas.BookingCreate, background_tasks: Backgro
     
     background_tasks.add_task(send_email, user.email, subject, body)
 
-    # НОВЕ: Плануємо нагадування, тільки якщо воно одразу підтверджене (тривалість < 3 год)
+    # Плануємо нагадування, тільки якщо воно одразу підтверджене (тривалість < 3 год)
     if db_booking.status == "confirmed":
         schedule_booking_reminders(str(db_booking.id), user.email, user.name, room.name, db_booking.start_time)
 
@@ -156,7 +161,7 @@ def delete_booking(booking_id: str, db: Session = Depends(get_db)):
     if not deleted:
         raise HTTPException(status_code=404, detail="Бронювання не знайдено")
     
-    # НОВЕ: Скасовуємо нагадування при видаленні
+    # Скасовуємо нагадування при видаленні
     cancel_booking_reminders(booking_id)
     
     return {"message": "Успішно видалено"}
@@ -182,7 +187,7 @@ def update_booking_info(booking_id: str, booking_update: schemas.BookingUpdate, 
         
         background_tasks.add_task(send_email, user.email, subject, body)
 
-        # НОВЕ: Робота з нагадуваннями при зміні статусу
+        # Робота з нагадуваннями при зміні статусу
         if booking_update.status == 'confirmed':
             # Якщо адмін підтвердив - ставимо нагадування
             schedule_booking_reminders(str(updated_booking.id), user.email, user.name, room.name, updated_booking.start_time)
