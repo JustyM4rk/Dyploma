@@ -38,7 +38,7 @@ class Room(Base):
 class Booking(Base):
     __tablename__ = "bookings"
     
-    # ВАЖЛИВО: ID - це рядок (UUID)
+    #ID - це рядок (UUID)
     id = Column(String, primary_key=True, default=generate_uuid)
     
     room_id = Column(String, ForeignKey("rooms.id"))
@@ -46,13 +46,13 @@ class Booking(Base):
     
     start_time = Column(DateTime)
     end_time = Column(DateTime)
-    status = Column(String, default="confirmed") # На скріншоті у вас 'confirmed'
+    status = Column(String, default="confirmed")
     
-    # НОВІ КОЛОНКИ (які ми додали)
+    # НОВІ КОЛОНКИ
     services = Column(String, default="")
     comment = Column(Text, default="")
     
-    # КОЛОНКИ З ВАШОЇ БАЗИ (щоб не було помилок)
+    # КОЛОНКИ З БАЗИ
     title = Column(String, nullable=True)
     participants_count = Column(Integer, default=1)
 
