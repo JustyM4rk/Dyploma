@@ -5,8 +5,8 @@ from email.mime.multipart import MIMEMultipart
 # Дані для відправки
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-SENDER_EMAIL = "markiian250906@gmail.com" 
-SENDER_PASSWORD = "shtc mdbl bkyl bvog"
+SENDER_EMAIL = os.getenv("markiian250906@gmail.com")
+SENDER_PASSWORD = os.getenv("shtc mdbl bkyl bvog")
 
 def send_email(to_email: str, subject: str, body: str):
     # --- РЕЖИМ ТЕСТУВАННЯ (Вивід у консоль) ---
