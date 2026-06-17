@@ -10,7 +10,11 @@ SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:passw
 
 # 2. Створення "рушія" (engine)
 #    Це головний об'єкт SQLAlchemy для роботи з БД
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=300
+)
 
 # 3. Створення "фабрики" сесій
 #    Сесія - це ваш "посередник" для спілкування з БД
