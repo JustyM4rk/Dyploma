@@ -25,7 +25,11 @@ app = FastAPI(
 # --- Налаштування CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://main-project-nu-ecru.vercel.app", # Vercel
+        "http://localhost:5173",                   # Локальний Vite
+        "http://127.0.0.1:5173"                    # Локальний Vite (альтернатива)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
