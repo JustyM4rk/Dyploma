@@ -12,7 +12,7 @@ def get_password_hash(password):
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
-# <--- НОВА ФУНКЦІЯ: Отримання списку всіх користувачів --->
+# --- Отримання списку всіх користувачів ---
 def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.User).offset(skip).limit(limit).all()
 
