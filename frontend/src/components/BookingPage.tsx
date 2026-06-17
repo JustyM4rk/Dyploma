@@ -158,9 +158,10 @@ export default function BookingPage() {
             const currentActiveBooking = getCurrentStatus(room.id); 
             
             return (
-              <div key={room.id} className="group relative bg-white p-6 rounded-xl shadow-lg border border-gray-100 transition-all duration-300 flex flex-col justify-between cursor-pointer hover:shadow-2xl hover:z-10">
+              <div key={room.id} className="group flex flex-col justify-between bg-white p-6 rounded-xl shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl cursor-pointer">
                 
-                <div className="flex justify-between items-start mb-2 relative z-10">
+                {/* Верхня частина з назвою і статусом */}
+                <div className="flex justify-between items-start mb-4">
                   <div>
                     <h2 className="text-xl font-bold text-gray-800">{room.name}</h2>
                     <p className="text-sm text-gray-500">👥 Місткість: {room.capacity} осіб</p>
@@ -177,31 +178,35 @@ export default function BookingPage() {
                   )}
                 </div>
 
-                <div className="absolute top-full left-0 w-full p-4 bg-white border border-gray-100 rounded-b-xl shadow-xl z-20 transition-all duration-300 ease-in-out opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
-                  <div className="text-sm text-gray-600 space-y-2">
-                    <div className="flex justify-between">
-                      <span className="font-semibold">📍 Поверх:</span>
-                      <span>{room.location || '-'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-semibold">📏 Площа:</span>
-                      <span>{room.area ? `${room.area} кв.м` : '-'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-semibold">💰 Ціна:</span>
-                      <span className="text-green-600 font-bold">{room.price_per_hour ? `${room.price_per_hour} ₴/год` : 'Безкоштовно'}</span>
-                    </div>
-                    {room.description && (
-                      <div className="mt-2 bg-gray-50 p-2 rounded text-xs text-gray-500 italic">
-                        "{room.description}"
+                {/* Прихований блок деталей (плавно розгортається вниз) */}
+                <div className="grid grid-rows-[0fr] transition-all duration-300 ease-in-out group-hover:grid-rows-[1fr]">
+                  <div className="overflow-hidden">
+                    <div className="pb-4 text-sm text-gray-600 space-y-2 border-t border-gray-100 pt-4 mt-2">
+                      <div className="flex justify-between">
+                        <span className="font-semibold">📍 Поверх:</span>
+                        <span>{room.location || '-'}</span>
                       </div>
-                    )}
+                      <div className="flex justify-between">
+                        <span className="font-semibold">📏 Площа:</span>
+                        <span>{room.area ? `${room.area} кв.м` : '-'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-semibold">💰 Ціна:</span>
+                        <span className="text-green-600 font-bold">{room.price_per_hour ? `${room.price_per_hour} ₴/год` : 'Безкоштовно'}</span>
+                      </div>
+                      {room.description && (
+                        <div className="mt-2 bg-gray-50 p-2 rounded text-xs text-gray-500 italic">
+                          "{room.description}"
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
+                {/* Кнопка бронювання */}
                 <button 
                   onClick={() => setSelectedRoom(room)}
-                  className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition relative z-10"
+                  className="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition relative z-10"
                 >
                   Забронювати
                 </button>
