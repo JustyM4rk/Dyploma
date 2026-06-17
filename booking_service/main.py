@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
 # --- Імпорти модулів ---
-from . import models, schemas, crud, analytics, ml_engine
+import models, schemas, crud, analytics, ml_engine
 from .database import SessionLocal, engine
 from .email_service import send_email
 # НОВЕ: Імпорт функцій планувальника
