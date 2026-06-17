@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from . import models
+from import models
 import pandas as pd
 
 def get_booking_stats(db: Session):
