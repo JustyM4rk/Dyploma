@@ -11,7 +11,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
-    axios.get('http://127.0.0.1:8000/analytics/dashboard')
+    axios.get('/analytics/dashboard')
       .then(res => setStats(res.data))
       .catch(err => console.error("Помилка:", err));
   }, []);

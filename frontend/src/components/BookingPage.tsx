@@ -35,8 +35,8 @@ export default function BookingPage() {
   const fetchData = async () => {
     try {
       const [roomsRes, bookingsRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/rooms/'),
-        axios.get('http://127.0.0.1:8000/bookings/')
+        axios.get('/rooms/'),
+        axios.get('/bookings/')
       ]);
       setRooms(roomsRes.data);
       setBookings(bookingsRes.data);
@@ -58,7 +58,7 @@ export default function BookingPage() {
       const day = date.getDay();  
       const hour = date.getHours(); 
 
-      axios.get(`http://127.0.0.1:8000/ml/predict?day=${day}&hour=${hour}`)
+      axios.get(`/ml/predict?day=${day}&hour=${hour}`)
         .then(res => setPrediction(res.data))
         .catch(err => console.error("AI Error:", err));
     } else {
@@ -127,7 +127,7 @@ export default function BookingPage() {
     };
 
     try {
-      const res = await axios.post('http://127.0.0.1:8000/bookings/', bookingData);
+      const res = await axios.post('/bookings/', bookingData);
       
       if (res.data.status === 'pending') {
          alert(`⏳ Заявку прийнято! \nОскільки бронювання довше 3-х годин, воно очікує підтвердження адміністратора.`);

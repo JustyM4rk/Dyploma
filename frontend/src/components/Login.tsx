@@ -12,7 +12,7 @@ export default function Login() {
     setError('');
     try {
       // Відправляємо і email, і пароль
-      const res = await axios.post('http://127.0.0.1:8000/login/', { email, password });
+      const res = await axios.post('/login/', { email, password });
       
       // Зберігаємо дані
       localStorage.setItem('user', JSON.stringify(res.data));

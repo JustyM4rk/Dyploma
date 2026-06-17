@@ -6,6 +6,10 @@ import Login from './components/Login';
 import MyBookings from './components/MyBookings';
 import Register from './components/Register'; 
 import Dashboard from './components/Dashboard'; // <--- ДОДАНО: Імпорт Дашборда
+import axios from 'axios';
+
+// Вказуємо Axios завжди використовувати посилання з Vercel, або локальне, якщо ми розробляємо вдома
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 // Компонент захисту маршрутів
 const ProtectedRoute = ({ children, roleRequired }: { children: React.ReactNode, roleRequired?: string }) => {

@@ -20,10 +20,10 @@ export default function MyBookings() {
 
   const fetchData = async () => {
     try {
-      const roomsRes = await axios.get('http://127.0.0.1:8000/rooms/');
+      const roomsRes = await axios.get('/rooms/');
       setRooms(roomsRes.data);
 
-      const bookingsRes = await axios.get('http://127.0.0.1:8000/bookings/');
+      const bookingsRes = await axios.get('/bookings/');
       
       // Залишаємо тільки бронювання поточного користувача
       const myBookings = bookingsRes.data.filter((b: any) => b.user_id === user?.user_id);
@@ -46,7 +46,7 @@ export default function MyBookings() {
   const handleCancel = async (id: string) => {
     if (confirm("Ви впевнені, що хочете скасувати це бронювання?")) {
       try {
-        await axios.delete(`http://127.0.0.1:8000/bookings/${id}`);
+        await axios.delete(`/bookings/${id}`);
         fetchData();
       } catch (e) {
         alert("Не вдалося скасувати");
@@ -73,7 +73,7 @@ export default function MyBookings() {
     if (editServices.whiteboard) servicesList.push("Дошка");
 
     try {
-      await axios.put(`http://127.0.0.1:8000/bookings/${editingBooking.id}`, {
+      await axios.put(`/bookings/${editingBooking.id}`, {
         services: servicesList.join(', '),
         comment: editComment
       });

@@ -22,9 +22,9 @@ export default function AdminPanel() {
   const load = async () => {
     try {
       const [roomsRes, bookingsRes, usersRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/rooms/'),
-        axios.get('http://127.0.0.1:8000/bookings/'),
-        axios.get('http://127.0.0.1:8000/users/') // <--- ДОДАНО: Запит за користувачами
+        axios.get('/rooms/'),
+        axios.get('/bookings/'),
+        axios.get('/users/') // <--- ДОДАНО: Запит за користувачами
       ]);
       setRooms(roomsRes.data);
       setUsers(usersRes.data); // <--- Зберігаємо в стейт
@@ -42,14 +42,14 @@ export default function AdminPanel() {
 
   const del = async (id: string) => {
     if(confirm("Видалити цей запис остаточно?")) {
-      await axios.delete(`http://127.0.0.1:8000/bookings/${id}`);
+      await axios.delete(`/bookings/${id}`);
       load();
     }
   };
 
   const approve = async (b: any) => {
     try {
-      await axios.put(`http://127.0.0.1:8000/bookings/${b.id}`, { ...b, status: 'confirmed' });
+      await axios.put(`/bookings/${b.id}`, { ...b, status: 'confirmed' });
       alert("Бронювання підтверджено! ✅");
       load();
     } catch (e) {
@@ -60,7 +60,7 @@ export default function AdminPanel() {
   const reject = async (b: any) => {
     if(confirm("Відхилити цю заявку?")) {
       try {
-        await axios.put(`http://127.0.0.1:8000/bookings/${b.id}`, { ...b, status: 'rejected' });
+        await axios.put(`/bookings/${b.id}`, { ...b, status: 'rejected' });
         load();
       } catch (e) {
         alert("Помилка оновлення");
@@ -69,7 +69,7 @@ export default function AdminPanel() {
   };
 
   const save = async () => {
-    await axios.put(`http://127.0.0.1:8000/bookings/${editing.id}`, editing);
+    await axios.put(`/bookings/${editing.id}`, editing);
     setEditing(null);
     load();
   };
@@ -80,7 +80,7 @@ export default function AdminPanel() {
       return;
     }
     try {
-      await axios.post('http://127.0.0.1:8000/rooms/', roomData);
+      await axios.post('/rooms/', roomData);
       alert("Кімнату успішно створено! 🎉");
       setIsRoomModalOpen(false);
       setRoomData({ name: '', capacity: 10, location: '', description: '', area: 0, price_per_hour: 0 }); 

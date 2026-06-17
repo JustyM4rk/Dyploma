@@ -29,7 +29,7 @@ export default function Register() {
     // -----------------------------------------------------
 
     try {
-      await axios.post('http://127.0.0.1:8000/users/', formData);
+      await axios.post('/users/', formData);
       alert("Реєстрація успішна! Тепер увійдіть.");
       navigate('/login');
     } catch (e: any) {
