@@ -6,11 +6,11 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
 # --- Імпорти модулів ---
-from . import models, schemas, crud, analytics, ml_engine
-from .database import SessionLocal, engine
-from .email_service import send_email
+import models, schemas, crud, analytics, ml_engine
+from database import SessionLocal, engine
+from email_service import send_email
 # НОВЕ: Імпорт функцій планувальника
-from .scheduler import scheduler, schedule_booking_reminders, cancel_booking_reminders
+from scheduler import scheduler, schedule_booking_reminders, cancel_booking_reminders
 
 # --- Налаштування безпеки (Bcrypt) ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

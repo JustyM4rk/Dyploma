@@ -1,6 +1,6 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
-from .email_service import send_email
+from email_service import send_email
 
 # Створюємо глобальний об'єкт планувальника
 scheduler = BackgroundScheduler()

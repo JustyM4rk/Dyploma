@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Float # <--- Додано Float
 from sqlalchemy.orm import relationship
-from .database import Base
+from database import Base
 import uuid
 
 # Генератор UUID для нових записів
