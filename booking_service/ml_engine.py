@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from database import SessionLocal, engine
-from import models
+import models
 import pickle # Для збереження навченої моделі
 import os
 
